@@ -2,41 +2,33 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import { useAuth } from "../context/AuthContext";
-import TweetItem from "../components/TweetItem"; // TweetItem'ı kullanmak için
+import TweetItem from "../components/TweetItem";
+import tweetService from "../services/tweetService";
 
 function TweetDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { authHeader, loggedInUsername, apiUrl } = useAuth();
+  const { loggedInUsername } = useAuth(); // Sadece username yeterli, login kontrolü context veya service seviyesinde
   const [tweet, setTweet] = useState(null);
   const [message, setMessage] = useState(null);
 
   const fetchTweetDetails = async () => {
-    if (!authHeader) {
-      setMessage("Giriş yapmalısın.");
-      return;
-    }
     try {
-      const res = await fetch(`${apiUrl}/tweet/findById/${id}`, {
-        headers: { Authorization: authHeader },
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Bilinmeyen bir hata oluştu." }));
-        throw new Error(errorData.message || "Tweet detayları alınamadı.");
-      }
-      const data = await res.json();
+      const data = await tweetService.getTweetById(id);
       setTweet(data);
       setMessage(null);
     } catch (err) {
       console.error("Tweet detayları çekilirken hata:", err);
-      toast.error(err.message);
-      setMessage(err.message);
+      // Backend'den düzgün hata mesajı geliyorsa onu gösterelim
+      const errorMsg = err.response?.data?.message || err.message || "Tweet detayları alınamadı.";
+      toast.error(errorMsg);
+      setMessage(errorMsg);
     }
   };
 
   useEffect(() => {
     fetchTweetDetails();
-  }, [id, authHeader]);
+  }, [id]);
 
   // TweetItem'dan tetiklenen eylemler sonrası listeyi güncellemek için
   const handleTweetAction = () => {
@@ -67,13 +59,10 @@ function TweetDetail() {
       </div>
 
       <div className="p-4">
-        <TweetItem 
-            tweet={tweet}
-            authHeader={authHeader}
-            loggedInUsername={loggedInUsername}
-            onAction={handleTweetAction}
-            onDelete={handleDeleteSuccess}
-            apiUrl={apiUrl}
+        <TweetItem
+          tweet={tweet}
+          onAction={handleTweetAction}
+          onDelete={handleDeleteSuccess}
         />
       </div>
     </div>

@@ -1,8 +1,14 @@
 import axiosClient from '../api/axiosClient';
 
 const authService = {
-    login: async (credentials) => {
-        // Login işlemi şuan Basic auth header oluşturularak manuel yapılıyor ama ileride burası kullanılabilir.
+    login: async (username, password) => {
+        const token = btoa(`${username}:${password}`);
+        const header = `Basic ${token}`;
+        // Basic auth header'ı ile user-details endpoint'ine istek at
+        const response = await axiosClient.get(`/auth/user-details?username=${username}`, {
+            headers: { Authorization: header }
+        });
+        return { ...response.data, authHeader: header };
     },
 
     getUserDetails: async (username) => {

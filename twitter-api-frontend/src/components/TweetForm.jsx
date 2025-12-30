@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { toast } from 'react-toastify';
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
+import tweetService from "../services/tweetService";
 
-function TweetForm({ onTweetPosted }) { // authHeader prop'u kaldırıldı
+function TweetForm({ onTweetPosted }) {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { authHeader, apiUrl } = useAuth(); // AuthContext'ten çek
+  const { isAuthenticated } = useAuth(); // Sadece giriş kontrolü için
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,26 +14,14 @@ function TweetForm({ onTweetPosted }) { // authHeader prop'u kaldırıldı
       toast.error("Tweet içeriği boş olamaz.");
       return;
     }
-    if (!authHeader) {
+    if (!isAuthenticated) {
       toast.error("Giriş yapmalısın.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/tweet`, { // Dinamik URL
-        method: "POST",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: "Bilinmeyen bir hata oluştu." }));
-        throw new Error(errorData.message || "Tweet gönderilemedi.");
-      }
+      await tweetService.postTweet(content);
 
       setContent("");
       toast.success("Tweet başarıyla gönderildi!");
@@ -41,7 +30,8 @@ function TweetForm({ onTweetPosted }) { // authHeader prop'u kaldırıldı
       }
     } catch (err) {
       console.error("Tweet gönderilirken hata:", err);
-      toast.error(err.message);
+      const errorMsg = err.response?.data?.message || err.message || "Tweet gönderilemedi.";
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }

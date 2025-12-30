@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import authService from "../services/authService";
 
 function Register() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const navigate = useNavigate();
-  const { apiUrl } = useAuth(); // AuthContext'ten apiUrl'i al
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,19 +14,13 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${apiUrl}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Kayıt başarısız");
-      }
+      await authService.register(form);
       toast.success("Kayıt başarılı! Giriş yapabilirsiniz.");
       setTimeout(() => navigate("/login"), 1000);
     } catch (err) {
-      toast.error(err.message);
+      console.error(err);
+      const errorMsg = err.response?.data?.message || err.message || "Kayıt başarısız";
+      toast.error(errorMsg);
     }
   };
 

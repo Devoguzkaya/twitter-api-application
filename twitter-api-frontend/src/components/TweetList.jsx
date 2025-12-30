@@ -1,33 +1,30 @@
 import { useEffect, useState } from "react";
 import TweetItem from "./TweetItem";
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
+import axiosClient from "../api/axiosClient";
 
-function TweetList({ lastUpdated, onAction, endpoint }) { // authHeader ve loggedInUsername kaldırıldı
+function TweetList({ lastUpdated, onAction, endpoint }) {
   const [tweets, setTweets] = useState([]);
   const [message, setMessage] = useState(null);
-  const { authHeader, loggedInUsername, apiUrl } = useAuth(); // AuthContext'ten çek
+  const { isAuthenticated } = useAuth(); // Sadece giriş kontrolü
 
   useEffect(() => {
-    if (!authHeader) return;
+    if (!isAuthenticated) return;
+
     const fetchTweets = async () => {
       try {
-        const url = endpoint || `${apiUrl}/tweet`; // Dinamik URL
-        const res = await fetch(url, {
-          headers: { Authorization: authHeader },
-        });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Tweetler alınamadı");
-        }
-        const data = await res.json();
-        setTweets(data);
+        // endpoint relative path olmalı (örn: '/tweet')
+        const url = endpoint || '/tweet';
+        const res = await axiosClient.get(url);
+        setTweets(res.data);
         setMessage(null);
       } catch (err) {
-        setMessage(err.message);
+        console.error("Tweet listesi alınamadı:", err);
+        setMessage(err.response?.data?.message || err.message || "Tweetler alınamadı");
       }
     };
     fetchTweets();
-  }, [authHeader, lastUpdated, endpoint, apiUrl]); // apiUrl bağımlılıklara eklendi
+  }, [isAuthenticated, lastUpdated, endpoint]);
 
   const handleDeleteFromList = (tweetId) => {
     setTweets(prev => prev.filter(t => t.id !== tweetId));
@@ -35,7 +32,7 @@ function TweetList({ lastUpdated, onAction, endpoint }) { // authHeader ve logge
 
   return (
     <div className="bg-slate-800 rounded p-4 flex flex-col gap-2">
-      {!authHeader && (
+      {!isAuthenticated && (
         <p className="text-sm text-gray-300">Tweetleri görmek için giriş yap.</p>
       )}
       {message && <p className="text-sm text-red-300">{message}</p>}
@@ -48,7 +45,7 @@ function TweetList({ lastUpdated, onAction, endpoint }) { // authHeader ve logge
             onDelete={handleDeleteFromList}
           />
         ))}
-        {tweets.length === 0 && authHeader && (
+        {tweets.length === 0 && isAuthenticated && (
           <p className="text-sm text-gray-300">Henüz tweet yok.</p>
         )}
       </div>

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
 const AuthContext = createContext();
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -35,13 +34,8 @@ export const AuthProvider = ({ children }) => {
                 try {
                     // Eğer username varsa rollerini çek
                     if (loggedInUsername) {
-                        const res = await fetch(`${API_URL}/auth/user-details?username=${loggedInUsername}`, {
-                            headers: { Authorization: authHeader },
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            setLoggedInRoles(data.roles || []);
-                        }
+                        const data = await authService.getUserDetails(loggedInUsername);
+                        setLoggedInRoles(data.roles || []);
                     }
                 } catch (error) {
                     console.error("Roller alınamadı:", error);
@@ -73,8 +67,7 @@ export const AuthProvider = ({ children }) => {
         loggedInRoles,
         login,
         logout,
-        isAuthenticated: !!authHeader,
-        apiUrl: API_URL 
+        isAuthenticated: !!authHeader
     };
 
     return (

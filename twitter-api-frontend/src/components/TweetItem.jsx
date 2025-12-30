@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
+import tweetService from "../services/tweetService";
+import commentService from "../services/commentService";
 
-function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader, loggedInUsername kaldırıldı
+function TweetItem({ tweet: initialTweet, onAction, onDelete }) {
     const [tweet, setTweet] = useState(initialTweet);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -19,9 +21,8 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
     const [editCommentContent, setEditCommentContent] = useState("");
 
     const navigate = useNavigate();
-    const { authHeader, loggedInUsername, apiUrl } = useAuth(); // AuthContext'ten çek
+    const { loggedInUsername } = useAuth(); // Removed authHeader and apiUrl
 
-    // Tweet prop'u değişirse state'i güncelle (örn: liste yenilenince)
     useEffect(() => {
         setTweet(initialTweet);
     }, [initialTweet]);
@@ -40,7 +41,7 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
 
     const handleToggleLike = async (e) => {
         e.stopPropagation();
-        if (!authHeader) return toast.error("Giriş yapmalısın!");
+        if (!loggedInUsername) return toast.error("Giriş yapmalısın!"); // Check loggedInUsername instead of authHeader
 
         // Optimistic Update
         setTweet(prev => ({
@@ -50,15 +51,7 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
         }));
 
         try {
-            const url = tweet.liked
-                ? `${apiUrl}/like/dislike/${tweet.id}`
-                : `${apiUrl}/like/${tweet.id}`;
-
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { Authorization: authHeader }
-            });
-            if (!res.ok) throw new Error("Like işlemi başarısız");
+            await tweetService.toggleLike(tweet.id, tweet.liked);
             if (onAction) onAction();
         } catch (err) {
             console.error(err);
@@ -74,7 +67,7 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
 
     const handleToggleRetweet = async (e) => {
         e.stopPropagation();
-        if (!authHeader) return toast.error("Giriş yapmalısın!");
+        if (!loggedInUsername) return toast.error("Giriş yapmalısın!");
         if (loggedInUsername === tweet.authorUsername) return toast.warning("Kendi tweetini retweetleyemezsin");
 
         // Optimistic Update
@@ -87,13 +80,8 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
         }));
 
         try {
-            const url = `${apiUrl}/retweet/${tweet.id}`;
-            const method = isRetweeted ? "DELETE" : "POST";
-            const res = await fetch(url, {
-                method: method,
-                headers: { Authorization: authHeader }
-            });
-            if (!res.ok) throw new Error("Retweet başarısız");
+            await tweetService.toggleRetweet(tweet.id, isRetweeted);
+
             if (onAction) onAction();
             toast.success(isRetweeted ? "Retweet geri alındı" : "Retweetlendi!");
         } catch (err) {
@@ -113,36 +101,25 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
     const handleDeleteTweet = async () => {
         if (!window.confirm("Silmek istediğine emin misin?")) return;
         try {
-            const res = await fetch(`${apiUrl}/tweet/${tweet.id}`, {
-                method: "DELETE",
-                headers: { Authorization: authHeader }
-            });
-            if (!res.ok) throw new Error("Silme başarısız");
+            await tweetService.deleteTweet(tweet.id);
             toast.success("Tweet silindi!");
             if (onDelete) onDelete(tweet.id);
             if (onAction) onAction();
         } catch (err) {
-            toast.error(err.message);
+            console.error(err);
+            toast.error("Silme başarısız");
         }
     };
 
     const handleUpdateTweet = async () => {
         try {
-            const res = await fetch(`${apiUrl}/tweet/${tweet.id}`, {
-                method: "PUT",
-                headers: {
-                    Authorization: authHeader,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ content: editContent })
-            });
-            if (!res.ok) throw new Error("Güncelleme başarısız");
-            const updated = await res.json();
+            const updated = await tweetService.updateTweet(tweet.id, editContent);
             setTweet(prev => ({ ...prev, content: updated.content }));
             setIsEditing(false);
             toast.success("Tweet güncellendi!");
         } catch (err) {
-            toast.error(err.message);
+            console.error(err);
+            toast.error("Güncelleme başarısız");
         }
     };
 
@@ -152,13 +129,8 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
         if (e) e.stopPropagation();
         if (!showComments) {
             try {
-                const res = await fetch(`${apiUrl}/comment/tweet/${tweet.id}`, {
-                    headers: { Authorization: authHeader }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setComments(data);
-                }
+                const data = await commentService.getCommentsByTweetId(tweet.id);
+                setComments(data);
             } catch (err) { console.error(err); }
         }
         setShowComments(!showComments);
@@ -168,32 +140,22 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
         e.preventDefault();
         if (!commentContent.trim()) return;
         try {
-            const res = await fetch(`${apiUrl}/comment/${tweet.id}`, {
-                method: "POST",
-                headers: {
-                    Authorization: authHeader,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ content: commentContent })
-            });
-            if (res.ok) {
-                setCommentContent("");
-                setShowReplyBox(false);
-                if (!showComments) setShowComments(true);
-                // Yorumları yeniden çek
-                const commentsRes = await fetch(`${apiUrl}/comment/tweet/${tweet.id}`, {
-                    headers: { Authorization: authHeader }
-                });
-                if (commentsRes.ok) setComments(await commentsRes.json());
+            await commentService.postComment(tweet.id, commentContent);
 
-                // Tweet commentCount güncelle (Optimistic)
-                setTweet(prev => ({ ...prev, commentCount: prev.commentCount + 1 }));
-                if (onAction) onAction();
-                toast.success("Yorum gönderildi!");
-            } else {
-                toast.error("Yorum gönderilemedi");
-            }
-        } catch (err) { console.error(err); toast.error("Hata oluştu"); }
+            setCommentContent("");
+            setShowReplyBox(false);
+            if (!showComments) setShowComments(true);
+
+            // Yorumları yeniden çek
+            const data = await commentService.getCommentsByTweetId(tweet.id);
+            setComments(data);
+
+            // Tweet commentCount güncelle (Optimistic)
+            setTweet(prev => ({ ...prev, commentCount: prev.commentCount + 1 }));
+            if (onAction) onAction();
+            toast.success("Yorum gönderildi!");
+
+        } catch (err) { console.error(err); toast.error("Yorum gönderilemedi"); }
     };
 
     // --- COMMENT EDIT/DELETE ---
@@ -201,45 +163,29 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
     const handleDeleteComment = async (commentId) => {
         if (!window.confirm("Yorumu sil?")) return;
         try {
-            const res = await fetch(`${apiUrl}/comment/${commentId}`, {
-                method: "DELETE",
-                headers: { Authorization: authHeader }
-            });
-            if (res.ok) {
-                setComments(prev => prev.filter(c => c.id !== commentId));
-                setTweet(prev => ({ ...prev, commentCount: prev.commentCount - 1 }));
-                toast.success("Yorum silindi");
-            } else {
-                toast.error("Yorum silinemedi");
-            }
+            await commentService.deleteComment(commentId);
+            setComments(prev => prev.filter(c => c.id !== commentId));
+            setTweet(prev => ({ ...prev, commentCount: prev.commentCount - 1 }));
+            toast.success("Yorum silindi");
         } catch (err) { console.error(err); toast.error("Hata oluştu"); }
     };
 
     const handleUpdateComment = async (commentId) => {
         try {
-            const res = await fetch(`${apiUrl}/comment/${commentId}`, {
-                method: "PUT",
-                headers: { Authorization: authHeader, "Content-Type": "application/json" },
-                body: JSON.stringify({ content: editCommentContent })
-            });
-            if (res.ok) {
-                const updated = await res.json();
-                setComments(prev => prev.map(c => c.id === commentId ? { ...c, content: updated.content } : c));
-                setEditingCommentId(null);
-                toast.success("Yorum güncellendi");
-            } else {
-                toast.error("Yorum güncellenemedi");
-            }
+            const updated = await commentService.updateComment(commentId, editCommentContent);
+            setComments(prev => prev.map(c => c.id === commentId ? { ...c, content: updated.content } : c));
+            setEditingCommentId(null);
+            toast.success("Yorum güncellendi");
         } catch (err) { console.error(err); toast.error("Hata oluştu"); }
     };
 
 
     const toggleReplyBox = (tweetId) => {
-        if (showReplyBox === tweetId) { // Changed from replyingToTweetId
+        if (showReplyBox === tweetId) {
             setShowReplyBox(null);
             setCommentContent("");
         } else {
-            setShowReplyBox(tweetId); // Changed from replyingToTweetId
+            setShowReplyBox(tweetId);
             setCommentContent("");
         }
     };
@@ -325,7 +271,7 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) { // authHeader,
                     </button>
                 </div>
 
-                {showReplyBox === tweet.id && ( // Updated for dynamic showReplyBox state
+                {showReplyBox === tweet.id && (
                     <form onSubmit={submitComment} className="mt-3 flex flex-col gap-2 bg-slate-700 p-3 rounded-md">
                         <textarea className="w-full p-2 rounded bg-slate-600 text-white text-sm" rows="2" placeholder="Yanıtla..." value={commentContent} onChange={e => setCommentContent(e.target.value)} />
                         <div className="flex justify-end"><button type="submit" className="bg-blue-500 text-white text-sm px-3 py-1 rounded-full">Yanıtla</button></div>

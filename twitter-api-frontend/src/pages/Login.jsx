@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
+import authService from "../services/authService";
 
 function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, apiUrl } = useAuth(); // AuthContext'ten login fonksiyonunu ve apiUrl'i al
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,31 +17,21 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    toast.dismiss(); // Önceki toast mesajlarını temizle
-
-    const token = btoa(`${form.username}:${form.password}`);
-    const header = `Basic ${token}`;
+    toast.dismiss();
 
     try {
-      const res = await fetch(`${apiUrl}/auth/user-details?username=${form.username}`, {
-        headers: { Authorization: header },
-      });
-
-      if (res.ok) {
-        login(header); // AuthContext'teki login fonksiyonunu çağır
-        toast.success("Giriş başarılı!");
-        setTimeout(() => navigate("/"), 500);
-      } else {
-        const errorData = await res.json().catch(() => ({ message: "Bilinmeyen bir hata oluştu." })); // JSON parse hatasını yakala
-        if (res.status === 401 || res.status === 403) {
-          toast.error("Kullanıcı adı veya şifre hatalı!");
-        } else {
-          toast.error(errorData.message || "Giriş yapılamadı. Sunucu hatası.");
-        }
-      }
+      const data = await authService.login(form.username, form.password);
+      login(data.authHeader);
+      toast.success("Giriş başarılı!");
+      setTimeout(() => navigate("/"), 500);
     } catch (err) {
       console.error(err);
-      toast.error("İstek gönderilirken hata oluştu: " + err.message);
+      if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+        toast.error("Kullanıcı adı veya şifre hatalı!");
+      } else {
+        const errorMsg = err.response?.data?.message || err.message || "Giriş yapılamadı.";
+        toast.error(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }

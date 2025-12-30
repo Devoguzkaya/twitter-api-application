@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
+import adminService from "../services/adminService";
 
 function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
-  const { authHeader, loggedInRoles, apiUrl } = useAuth(); // AuthContext'ten çek
+  const { loggedInRoles } = useAuth(); // Sadece roller yeterli
 
   // Admin yetkisi yoksa anasayfaya yönlendir
   useEffect(() => {
@@ -15,31 +16,25 @@ function AdminPanel() {
       toast.error("Yalnızca yöneticiler bu sayfayı görüntüleyebilir!");
       navigate("/");
     }
-  }, [loggedInRoles, navigate, apiUrl]);
+  }, [loggedInRoles, navigate]);
 
   useEffect(() => {
-    if (!authHeader || !loggedInRoles.includes("ADMIN")) return;
+    if (!loggedInRoles.includes("ADMIN")) return;
 
     const fetchUsers = async () => {
       try {
-        const res = await fetch(`${apiUrl}/admin/users`, { // Dinamik URL
-          headers: { Authorization: authHeader },
-        });
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ message: "Bilinmeyen bir hata oluştu." }));
-          throw new Error(errorData.message || "Kullanıcılar alınamadı.");
-        }
-        const data = await res.json();
+        const data = await adminService.getAllUsers();
         setUsers(data);
         setMessage(null);
       } catch (err) {
         console.error("Kullanıcılar çekilirken hata:", err);
-        toast.error(err.message);
-        setMessage(err.message);
+        const errorMsg = err.response?.data?.message || err.message || "Kullanıcılar alınamadı.";
+        toast.error(errorMsg);
+        setMessage(errorMsg);
       }
     };
     fetchUsers();
-  }, [authHeader, loggedInRoles, apiUrl]);
+  }, [loggedInRoles]);
 
   if (!loggedInRoles.includes("ADMIN")) {
     return null; // Yetki kontrolü yapılırken boş göster

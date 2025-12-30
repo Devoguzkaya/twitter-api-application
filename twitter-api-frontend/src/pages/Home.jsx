@@ -1,11 +1,14 @@
 import { useState } from "react";
 import TweetList from "../components/TweetList";
 import TweetForm from "../components/TweetForm";
-import { useAuth } from "../context/AuthContext"; // useAuth hook'unu import et
+import { useAuth } from "../context/AuthContext";
 
 function Home() {
   const [lastUpdated, setLastUpdated] = useState(Date.now());
-  const { authHeader, loggedInUsername, apiUrl } = useAuth(); // AuthContext'ten çek
+  const { loggedInUsername } = useAuth(); // Sadece conditional rendering için username yeterli mi yoksa isAuthenticated mı?
+
+  // TweetForm içeride isAuthenticated kontrolü yapıyor ama burada buttonu hiç göstermemek daha şık olabilir.
+  // loggedInUsername varsa göster.
 
   const handleTweetPosted = () => {
     setLastUpdated(Date.now()); // Tweet gönderildikten sonra listeyi yenilemek için
@@ -19,11 +22,11 @@ function Home() {
 
       {loggedInUsername && (
         <div className="border-b border-gray-700 p-4">
-          <TweetForm authHeader={authHeader} onTweetPosted={handleTweetPosted} apiUrl={apiUrl} />
+          <TweetForm onTweetPosted={handleTweetPosted} />
         </div>
       )}
 
-      <TweetList authHeader={authHeader} lastUpdated={lastUpdated} onAction={handleTweetPosted} loggedInUsername={loggedInUsername} endpoint={`${apiUrl}/tweet`} /> {/* apiUrl ilettik */}
+      <TweetList lastUpdated={lastUpdated} onAction={handleTweetPosted} endpoint="/tweet" />
     </div>
   );
 }
