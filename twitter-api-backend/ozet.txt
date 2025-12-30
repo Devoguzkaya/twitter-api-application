@@ -1,0 +1,75 @@
+================================================================================
+PROJE OZETI: Twitter API (FSWEB-s19-Challenge)
+Tarih: 30 Aralik 2025 Sali (Final Release)
+================================================================================
+
+1. PROJE AMACI
+--------------------------------------------------------------------------------
+Spring Boot ile Twitter benzeri, iliskisel veritabanini kullanan, guvenli ve performansli bir REST API gelistirmek.
+Bu API'yi tuketen, modern ve moduler bir React arayuzu ile tam fonksiyonel bir sosyal medya deneyimi sunmak.
+
+2. KULLANILAN TEKNOLOJILER
+--------------------------------------------------------------------------------
+[Backend]
+- Dil: Java 17
+- Framework: Spring Boot 3.x (Web, Data JPA, Security, Validation)
+- Veritabani: PostgreSQL
+- Build Tool: Maven
+- Araclar: Lombok, Hibernate (ORM), Docker
+- Test: JUnit 5, Mockito (Unit & Integration Tests)
+
+[Frontend]
+- Framework: React 19 (Vite), React Router DOM
+- Dil: JavaScript
+- Stil: Tailwind CSS
+- State Yonetimi: React Context API (AuthContext)
+- Bildirimler: React Toastify
+- HTTP Client: Fetch API
+
+3. MIMARI YAPI
+--------------------------------------------------------------------------------
+[Backend]
+- Katmanli Mimari: Controller, Service, Repository, Entity.
+- DTO Pattern: Entity'ler disari acilmaz, Request/Response DTO'lari kullanilir.
+- Dependency Injection: Constructor Injection.
+- Exception Handling: GlobalExceptionHandler ile merkezi hata yonetimi (English messages).
+- Security: Spring Security, HTTP Basic Auth, BCrypt, RBAC (USER/ADMIN).
+- Performance: N+1 problemi cozuldu (User fetching optimized in DTO conversion), Pagination destegi.
+
+[Frontend]
+- Component-Based Architecture: TweetItem, TweetList, Sidebar, Layout gibi yeniden kullanilabilir bilesenler.
+- Context API: Kullanici oturum ve rol bilgileri merkezi olarak yonetilir (AuthContext).
+- Layout Pattern: Sayfa duzeni (Sidebar, Main, RightSection) Layout bileseni ile standardize edildi.
+- Optimistic UI Updates: Like ve Retweet islemlerinde aninda arayuz guncellemesi.
+
+4. TAMAMLANAN OZELLIKLER VE FONKSIYONLAR
+--------------------------------------------------------------------------------
+A) Backend (API)
+- Auth: Register, user-details (Basic Auth). Register mantigi Service katmanina tasindi.
+- Tweet: CRUD, Pagination (Pageable), Feed siralamasi (Retweet/Tweet creation time).
+- Comment: CRUD, yetki kontrolleri.
+- Like: Toggle (Like/Dislike), duplicate kontrol.
+- Retweet: Toggle (Retweet/Unretweet), self-retweet engeli.
+- User: Profil detaylari, rol bazli yetkilendirme.
+- Admin: Kullanici listeleme (Sadece ADMIN).
+- Validasyon: Email/Username unique kontrolu, sifre uzunlugu vb.
+
+B) Frontend (React)
+- Auth: Login, Register (Validasyonlu), Logout.
+- Feed: Sayfali tweet akisi, optimistic like/retweet guncellemeleri.
+- Tweet Actions: Like (Kalp animasyonu), Retweet (Yesil ikon), Yorum yapma.
+- Edit/Delete: Tweet ve yorum sahipleri icin 3 noktali menu ile duzenleme ve silme.
+- Profil: Kullaniciya ozel tweet/retweet akisi.
+- Bildirimler: Basarili/Hatali islemler icin Toast mesajlari.
+- Admin Paneli: Kullanici listesi ve yetki gosterimi.
+
+5. GELISTIRME NOTLARI
+--------------------------------------------------------------------------------
+- Monorepo yapisi kuruldu (twitter-api-backend, twitter-api-frontend).
+- Backend Dockerfile eklendi.
+- Frontend API URL dinamik hale getirildi (Environment Variable).
+- Kod temizligi: Gereksiz yorumlar silindi, Turkce karakter sorunlari giderildi.
+- Test Kapsami: Happy path disinda hata senaryolari (403, 400, 404) test edildi.
+================================================================================
+Durum: TAMAMLANDI (Production Ready)
+================================================================================

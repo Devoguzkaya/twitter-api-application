@@ -1,0 +1,1 @@
+INSERT INTO app_role (authority) VALUES ('USER'), ('ADMIN') ON CONFLICT (authority) DO NOTHING;
