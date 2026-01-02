@@ -42,7 +42,7 @@ function BottomNav() {
 
     if (!loggedInUsername) {
         return (
-            <div className="fixed bottom-0 left-0 w-full h-auto py-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-black border-t border-[#2f3336] flex items-center justify-around sm:hidden z-[9999]">
+            <div className="fixed bottom-0 left-0 w-full h-auto py-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-black border-t border-[#2f3336] flex items-center justify-around sm:hidden z-[9999] translate-z-0">
                 <button onClick={() => navigate("/login")} className="text-white font-bold text-sm bg-slate-800 px-4 py-2 rounded-full">Giriş Yap</button>
                 <button onClick={() => navigate("/register")} className="text-black font-bold text-sm bg-white px-4 py-2 rounded-full">Kaydol</button>
             </div>
@@ -51,7 +51,7 @@ function BottomNav() {
 
     return (
         <>
-            <div className="fixed bottom-0 left-0 w-full h-auto py-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-black border-t border-[#2f3336] flex items-center justify-around sm:hidden z-[9999]">
+            <div className="fixed bottom-0 left-0 w-full h-auto py-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-black border-t border-[#2f3336] flex items-center justify-around sm:hidden z-[9999] translate-z-0">
                 {menuItems.map((item) => {
                     if (item.authRequired && !loggedInUsername) return null;
                     if (item.adminOnly && !isAdmin) return null;

@@ -4,7 +4,7 @@ import BottomNav from "./BottomNav";
 
 function Layout({ children }) {
     return (
-        <div className="flex justify-center min-h-dvh bg-black text-white font-sans overflow-hidden">
+        <div className="flex justify-center min-h-dvh bg-black text-white font-sans">
             <div className="flex w-full xl:max-w-[1265px] h-dvh">
                 {/* SIDEBAR (LEFT) */}
                 <div className="shrink-0 z-50">
