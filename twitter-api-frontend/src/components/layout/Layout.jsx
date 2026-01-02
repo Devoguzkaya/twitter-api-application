@@ -14,7 +14,7 @@ function Layout({ children }) {
                 {/* MAIN FEED (CENTER) */}
                 <main className="flex-1 border-r border-[#2f3336] min-w-0 overflow-y-auto custom-scrollbar w-full sm:border-r-0 lg:border-r max-w-none lg:max-w-[600px] xl:max-w-[600px]">
                     {children}
-                    <div className="h-[60px] sm:hidden w-full"></div> {/* Spacer for BottomNav */}
+                    <div className="h-[100px] sm:hidden w-full"></div> {/* Spacer for BottomNav */}
                 </main>
 
                 {/* RIGHT SECTION */}
