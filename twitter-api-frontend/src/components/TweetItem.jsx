@@ -236,7 +236,7 @@ function TweetItem({ tweet: initialTweet, onAction, onDelete }) {
                             </div>
                         </div>
                     ) : (
-                        <p className="text-gray-100 mt-2">{tweet.content}</p>
+                        <p className="text-gray-100 mt-2 break-words whitespace-pre-wrap">{tweet.content}</p>
                     )}
                 </div>
             </div>
